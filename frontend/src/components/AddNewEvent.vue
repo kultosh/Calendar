@@ -1,0 +1,182 @@
+<template>
+  <div v-if="isVisible" class="modal">
+    <div class="modal-content">
+      <span class="close" @click="closeModal">&times;</span>
+      <h2>Event Details</h2>
+      <form @submit.prevent="submitForm">
+        <div class="form-group">
+          <label for="title">Title:</label>
+          <input type="text" id="title" v-model="form.title" required class="form-control" />
+        </div>
+        <div class="form-group">
+          <label for="startDate">Start Date:</label>
+          <input type="date" id="startDate" v-model="form.startDate" required class="form-control" :disabled="isFieldDisable" />
+        </div>
+        <div class="form-group">
+          <label for="endDate">End Date:</label>
+          <input type="date" id="endDate" v-model="form.endDate" required class="form-control" :disabled="isFieldDisable" />
+        </div>
+        <div class="form-group">
+          <label for="category">Category:</label>
+          <select id="category" v-model="form.category" required class="form-control">
+            <option value="" disabled>Select a category</option>
+            <option v-for="(category,index) in categoryList" :key="index" :value="category.value">{{category.text}}</option>
+          </select>
+        </div>
+        <button type="submit" class="btn">Submit</button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script>
+  export default {
+    props: {
+      isVisible: {
+        type: Boolean,
+        required: true
+      },
+      formData: {
+        type: Object,
+        required: false
+      },
+      isEdit: {
+        type: Boolean,
+        required: true
+      },
+    },
+    data() {
+      return {
+        categoryList: [
+          {
+              value: 'personal',
+              text: 'Personal'
+          },
+          {
+              value: 'business',
+              text: 'Business'
+          },
+          {
+              value: 'family',
+              text: 'Family'
+          },
+          {
+              value: 'holiday',
+              text: 'Holiday'
+          },
+          {
+              value: 'etc',
+              text: 'ETC'
+          }
+        ],
+        form: {
+          title: '',
+          startDate: '',
+          endDate: '',
+          category: ''
+        },
+        isFieldDisable: false,
+      };
+    },
+    methods: {
+      closeModal() {
+        this.$emit('close');
+        this.resetForm();
+      },
+      submitForm() {
+        this.$emit('submit', this.form);
+        this.closeModal();
+        this.resetForm();
+      },
+      resetForm() {
+        this.form = {
+          title: '',
+          startDate: '',
+          endDate: '',
+          category: ''
+        };
+      }
+    },
+    watch: {
+      isVisible(status) {
+        if(status) {
+          if(!this.isEdit && Object.keys(this.formData).includes('startDate')) {
+            this.form.startDate = this.formData.startDate;
+            this.form.endDate = this.formData.endDate;
+            this.isFieldDisable = true;
+          }
+        }
+      }
+    }
+  }
+</script>
+
+<style scoped>
+  .modal {
+    display: flex;
+    position: fixed;
+    z-index: 3;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    background-color: white;
+    margin: auto;
+    padding: 20px;
+    border-radius: 5px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
+
+  .btn {
+    background-color: #7367F0;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    background-color: #5a54c3;
+  }
+</style>
