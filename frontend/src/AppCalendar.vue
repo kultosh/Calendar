@@ -2,8 +2,8 @@
   <div class="container">
     <div class="calendar-row">
       <div class="calendar-col">
-        <div class="content">
-          <button class="calendar-btn">Add New</button>
+        <div class="sidebar">
+          <button class="calendar-btn" @click="openModal">Add New</button>
           <div class="calendar-filter">
             <label for="filter">FILTER</label>
             <ul>
@@ -33,6 +33,9 @@
               </li>
             </ul>
           </div>
+          <div class="sidebar-img">
+            <img src="/img/Image.png" alt="Calendar Sidebar">
+          </div>
         </div>
       </div>
       <div class="calendar-col">
@@ -47,6 +50,7 @@
         </FullCalendar>
       </div>
     </div>
+    <event-form :isVisible="isModalVisible" :formData="selectedEventData" :isEdit="isEventEdit" @close="closeModal" @submit="handleSubmit" />
   </div>
 </template>
 
@@ -56,11 +60,13 @@
   import timeGridPlugin from '@fullcalendar/timegrid'
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
+  import AddNewEvent from './components/AddNewEvent.vue'
 
   export default {
       name: "AppCalendar",
       components: {
-          FullCalendar
+          FullCalendar,
+          'event-form': AddNewEvent,
       },
       data: function() {
           return {
@@ -86,178 +92,97 @@
                   editable: true,
                   selectable: true,
                   selectMirror: true,
-                  dayMaxEvents: true,
+                  dayMaxEvents: 2,
+                  height: 'auto',
                   weekends: true,
                   select: this.handleDateSelect,
                   eventClick: this.handleEventClick,
-                  eventsSet: this.handleEvents
+                  eventsSet: this.handleEvents,
+                  events: [{id: 1, color: '#00CFE81F', textColor: '#00CFE8', start: '2024-09-24', end: '2024-09-27', title: 'First Event'}]
               },
+              isModalVisible: false,
+              isEventEdit: false,
+              selectedEventData: {},
           }
       },
+      mounted() {
+        /** Test */
+        const getEvents = JSON.parse(localStorage.getItem('calendarEventList'));
+        if(!!getEvents && getEvents.length > 0) {
+          this.calendarOptions.events = getEvents;
+        }
+      },
+      methods: {
+        handleWeekendsToggle() {
+          this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
+        },
+
+        handleDateSelect(selectInfo) {
+          this.selectedEventData = {
+            startDate: selectInfo.startStr,
+            endDate: selectInfo.endStr
+          };
+          this.isModalVisible = true;
+        },
+
+        handleEventClick(clickInfo) {
+          if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
+            let filterEventList = this.calendarOptions.events.filter((dayEvent) => {
+              return dayEvent.id !== parseInt(clickInfo.event.id);
+            });
+            this.calendarOptions.events = filterEventList;
+            localStorage.setItem('calendarEventList', JSON.stringify(filterEventList));
+          }
+        },
+
+        handleEvents(events) {
+          this.currentEvents = events
+        },
+
+        openModal() {
+          this.isModalVisible = true;
+        },
+
+        closeModal() {
+          this.isModalVisible = false;
+          this.isEventEdit = false;
+          this.selectedEventData = {};
+        },
+
+        handleSubmit(formData) {
+          const eventColor = this.getEventColor(formData.category);
+          const curretnEvent =  {
+                                id: this.calendarOptions.events.length > 0 ? this.calendarOptions.events.length+1 : 1,
+                                color: eventColor.background,
+                                textColor: eventColor.textColor,
+                                start: formData.startDate,
+                                end: formData.endDate,
+                                title: formData.title
+                              };
+          this.calendarOptions.events.push(curretnEvent);
+          localStorage.setItem('calendarEventList', JSON.stringify(this.calendarOptions.events));
+        },
+
+        getEventColor(category) {
+          let selectedColor = {};
+          switch(category) {
+            case 'personal':
+              selectedColor = { background: '#28C76F1F', textColor: '#28C76F'};
+              break;
+            case 'family':
+              selectedColor = { background: 'rgb(255 171 0 / 11%)', textColor: '#FF9F43'};
+              break;
+            case 'holiday':
+              selectedColor = { background: '#28C76F1F', textColor: '#28C76F'};
+              break;
+            case 'etc':
+              selectedColor = { background: '#00CFE81F', textColor: '#00CFE8'};
+              break;
+            default:
+              selectedColor = { background: 'rgb(105 108 255 / 21%)', textColor: '#7367F0'};
+          }
+          return selectedColor;
+        }
+      }
   }
 </script>
-
-<style lang='css'>
-.container {
-  padding: 20px;
-  font-family: Montserrat, sans-serif;
-}
-
-.calendar-row {
-  display: grid;
-  grid-template-columns: 2fr 8fr;
-  column-gap: 20px;
-}
-
-.calendar-btn {
-  width: 213px;
-  height: 38px;
-  border-radius: 5px;
-  border: none;
-  background: #7367F0;
-
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 17.07px;
-  letter-spacing: 0.4px;
-  text-align: center;
-  color: #FFFFFF;
-  cursor: pointer;
-}
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 27px;
-}
-
-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #5E5873;
-}
-
-.calendar-filter {
-  margin-top: 20px;
-}
-
-.calendar-filter > ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 5px 0;
-}
-
-.calendar-filter > ul li {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-  gap: 10px;
-}
-
-.calendar-filter input[type="checkbox"] {
-  display: none;
-}
-
-.calendar-filter li label {
-  position: relative;
-  padding-left: 30px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  color: #5E5873;
-}
-
-.calendar-filter li label:before {
-  content: '';
-  display: inline-block;
-  width: 18px;
-  height: 18px;
-  background-color: lightgray;
-  border: none;
-  border-radius: 4px;
-  transition: background-color 0.3s, border-color 0.3s;
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-#view-all:checked + label:before, #business:checked + label:before {
-  background-color: #7367F0;
-}
-
-#personal:checked + label:before {
-  background-color: #EA5455;
-}
-
-#family:checked + label:before {
-  background-color: #FF9F43;
-}
-
-#holiday:checked + label:before {
-  background-color: #28C76F;
-}
-
-#etc:checked + label:before {
-  background-color: #00CFE8;
-}
-
-.calendar-filter li input:checked + label:after {
-  content: url('./assets/path.svg');
-  color: white;
-  font-size: 14px;
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-label[for="filter"] {
-  font-size: 12px;
-  font-weight: 500;
-  color: #B9B9C3;
-}
-
-.fc-daygrid-day-top {
-  flex-direction: row !important;
-  color: #6E6B7B;
-}
-
-.fc .fc-col-header-cell {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 21px;
-  text-align: center;
-  color: #6E6B7B;
-  border-right: 1px solid #FFFFFF;
-}
-
-.fc-button {
-    background: none !important;
-    color: #7367F0 !important;
-    border-color: #696CFF !important;
-}
-
-.fc-next-button, 
-.fc-prev-button{
-    border: none !important;
-}
-
-.fc-icon-chevron-left::before,.fc-icon-chevron-right::before {
-  color: #6C757D
-}
-
-.fc-toolbar-chunk {
-  display: flex;
-}
-
-.fc-toolbar-title {
-  color: #5E5873;
-}
-
-.fc-dayGridMonth-button, 
-.fc-timeGridWeek-button, 
-.fc-timeGridDay-button {
-    padding: 5px 20px !important; /* Adjust the values as needed */
-}
-</style>
