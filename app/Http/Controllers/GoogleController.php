@@ -69,9 +69,37 @@ class GoogleController extends Controller
         $client->setAccessToken($googleToken);
 
         $calendarService = new GoogleCalendar($client);
-        $events = $calendarService->events->listEvents('primary');
+        if($request->isFilter=='true') {
+            $filterList = $request->selectedFilterList;
+            $events = [];
+            foreach($filterList as $category) {
+                $optParams = [
+                    'fields' => 'items(id, summary, start, end, extendedProperties)',
+                    'privateExtendedProperty' => "category=$category", // Filter by private extended property
+                    'maxResults' => 10,
+                    'orderBy' => 'startTime',
+                    'singleEvents' => true,
+                ];
+                $events[]=$calendarService->events->listEvents('primary', $optParams)->getItems();
+            }
+            $events = collect($events)->collapse();
+        } else {
+            $events = $calendarService->events->listEvents('primary')->getItems();
+        }
+        
+        $eventList = [];
+        foreach ($events as $event) {
+            $eventList[] = [
+                'id' => $event->getId(),
+                'title' => $event->getSummary(),
+                'start' => $event->getStart()->date,
+                'end' => $event->getEnd()->date,
+                'extendedProperties' => $event->getExtendedProperties() ? $event->getExtendedProperties()->getPrivate() : null,
+                'color' => '#00CFE8'
+            ];
+        }
 
-        return response()->json($events->getItems());
+        return response()->json($eventList);
     }
 
     public function addGoogleEvent(Request $request)
@@ -82,12 +110,15 @@ class GoogleController extends Controller
             $client->setAccessToken($googleToken);
 
             $calendarService = new GoogleCalendar($client);
-            // dd($request->all());
-            \Log::info($googleToken);
             $event = new GoogleCalendar\Event([
                 'summary' => $request->summary,
                 'start' => ['date' => $request->start, 'timeZone' => 'Asia/Kathmandu'],
                 'end' => ['date' => $request->end, 'timeZone' => 'Asia/Kathmandu'],
+                'extendedProperties' => [
+                    'private' => [
+                        'category' => $request->category,
+                    ]
+                ],
             ]);
 
             $calendarService->events->insert('primary', $event);
