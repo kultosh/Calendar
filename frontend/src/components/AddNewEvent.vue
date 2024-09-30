@@ -23,7 +23,8 @@
             <option v-for="(category,index) in categoryList" :key="index" :value="category.value">{{category.text}}</option>
           </select>
         </div>
-        <button type="submit" class="btn">Submit</button>
+        <button type="submit" class="btn">{{submitButton}}</button>
+        <button type="submit" class="btn btn-danger" v-if="isEdit" @click="deleteEvent">{{deleteButton}}</button>
       </form>
     </div>
   </div>
@@ -70,12 +71,15 @@
           }
         ],
         form: {
+          id: '',
           title: '',
           startDate: '',
           endDate: '',
           category: ''
         },
         isFieldDisable: false,
+        submitButton: 'Submit',
+        deleteButton: 'Delete',
       };
     },
     methods: {
@@ -88,13 +92,20 @@
         this.closeModal();
         this.resetForm();
       },
+      deleteEvent() {
+        this.$emit('delete', this.form.id);
+        this.closeModal();
+        this.resetForm();
+      },
       resetForm() {
         this.form = {
+          id: '',
           title: '',
           startDate: '',
           endDate: '',
           category: ''
         };
+        this.submitButton = 'Submit';
       }
     },
     watch: {
@@ -104,6 +115,13 @@
             this.form.startDate = this.formData.startDate;
             this.form.endDate = this.formData.endDate;
             this.isFieldDisable = true;
+          } else if(this.isEdit) {
+            this.submitButton = 'Update';
+            this.form.id = this.formData.id;
+            this.form.startDate = this.formData.startDate;
+            this.form.endDate = this.formData.endDate;
+            this.form.title = this.formData.title;
+            this.form.category = this.formData.category;
           }
         }
       }
@@ -178,5 +196,14 @@
 
   .btn:hover {
     background-color: #5a54c3;
+  }
+
+  .btn-danger {
+    background-color: #dc3545;
+    margin-left: 10px;
+  }
+
+  .btn-danger:hover {
+    background-color: #d11f31;
   }
 </style>

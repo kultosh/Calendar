@@ -129,4 +129,71 @@ class GoogleController extends Controller
             dd($error->getMessage());
         }
     }
+
+    public function updateGoogleEvent(Request $request, $eventId)
+    {
+        try {
+            $googleToken = $request->user()->google_token;
+            $client = new GoogleClient();
+            $client->setAccessToken($googleToken);
+
+            $calendarService = new GoogleCalendar($client);
+
+            // Fetch the existing event
+            $event = $calendarService->events->get('primary', $eventId);
+            
+            // Update the event properties based on request data
+            $event->setSummary($request->summary ?? $event->getSummary());
+            $event->setStart(new GoogleCalendar\EventDateTime([
+                'date' => $request->start,
+                'timeZone' => 'Asia/Kathmandu',
+            ]));
+            $event->setEnd(new GoogleCalendar\EventDateTime([
+                'date' => $request->end,
+                'timeZone' => 'Asia/Kathmandu',
+            ]));
+
+            if ($request->category) {
+                $extendedProperties = $event->getExtendedProperties() ?: new GoogleCalendar\EventExtendedProperties();
+                $extendedProperties->setPrivate(['category' => $request->category]);
+                $event->setExtendedProperties($extendedProperties);
+            }
+
+            $updatedEvent = $calendarService->events->update('primary', $eventId, $event);
+            $data = [
+                'id' => $updatedEvent->getId(),
+                'title' => $updatedEvent->getSummary(),
+                'start' => $updatedEvent->getStart()->date,
+                'end' => $updatedEvent->getEnd()->date,
+                'extendedProperties' => $updatedEvent->getExtendedProperties() ? $updatedEvent->getExtendedProperties()->getPrivate() : null,
+                'color' => '#00CFE8'
+            ];
+
+            return response()->json(['message' => 'Event updated successfully', 'event' => $data]);
+        } catch (\Exception $error) {
+            \Log::error($error->getMessage());
+            return response()->json(['error' => 'Failed to update event'], 500);
+        }
+    }
+
+    public function deleteGoogleEvent(Request $request, $eventId) {
+        try {
+            $googleToken = $request->user()->google_token;
+            $client = new GoogleClient();
+            $client->setAccessToken($googleToken);
+    
+            $calendarService = new GoogleCalendar($client);
+    
+            // Attempt to delete the event
+            $calendarService->events->delete('primary', $eventId);
+    
+            return response()->json(['message' => 'Event Deleted Successfully'], 200);
+        } catch (\Google_Service_Exception $e) {
+            \Log::error('Google Service Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to delete event: ' . $e->getMessage()], 500);
+        } catch (\Exception $error) {
+            \Log::error('General Error: ' . $error->getMessage());
+            return response()->json(['error' => 'Failed to delete event'], 500);
+        }
+    }    
 }

@@ -30,7 +30,7 @@
         </FullCalendar>
       </div>
     </div>
-    <event-form :isVisible="isModalVisible" :formData="selectedEventData" :isEdit="isEventEdit" @close="closeModal" @submit="handleSubmit" />
+    <event-form :isVisible="isModalVisible" :formData="selectedEventData" :isEdit="isEventEdit" @close="closeModal" @submit="handleSubmit" @delete="handleDelete" />
   </div>
 </template>
 
@@ -136,12 +136,15 @@ import axios from 'axios';
         },
 
         handleEventClick(clickInfo) {
-          if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
-            let filterEventList = this.calendarOptions.events.filter((dayEvent) => {
-              return dayEvent.id !== parseInt(clickInfo.event.id);
-            });
-            this.calendarOptions.events = filterEventList;
-          }
+          this.selectedEventData = {
+            id: clickInfo.event.id,
+            startDate: clickInfo.event.startStr,
+            endDate: clickInfo.event.endStr,
+            title: clickInfo.event.title,
+            category: clickInfo.event.extendedProps.extendedProperties ? clickInfo.event.extendedProps.extendedProperties.category : null,
+          };
+          this.isEventEdit = true;
+          this.isModalVisible = true;
         },
 
         handleEvents(events) {
@@ -182,7 +185,25 @@ import axios from 'axios';
             category: formData.category,
           };
 
-          axios.post('http://localhost:8000/api/google/events', eventData, config)
+          if(this.isEventEdit) {
+            axios.put('http://localhost:8000/api/google/events/'+formData.id, eventData, config)
+            .then(response => {
+              alert(response.data.message);
+              const updateIndex = this.calendarOptions.events.findIndex(event => event.id === formData.id);
+              if (updateIndex !== -1) {
+                this.calendarOptions.events.splice([updateIndex],1);
+                this.$nextTick(() => {
+                  this.calendarOptions.events.push(response.data.event);
+                });
+              } else {
+                console.error('Event not found with id:', formData.id);
+              }
+            })
+            .catch(error => {
+              console.error('There was an error adding the event:', error);
+            });
+          } else {
+            axios.post('http://localhost:8000/api/google/events', eventData, config)
             .then(response => {
               alert(response.data.message);
               if(this.selectedFilterCategorgies.includes(formData.category)) {
@@ -190,7 +211,30 @@ import axios from 'axios';
               }
             })
             .catch(error => {
-              console.error('There was an error adding the event:', error);
+              console.error('There was an error updating the event:', error);
+            });
+          }
+        },
+
+        handleDelete(id) {
+          const token = localStorage.getItem('auth_token');
+          const config = {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          };
+          axios.delete('http://localhost:8000/api/google/events/'+id, config)
+            .then(response => {
+              alert(response.data.message);
+              const deleteIndex = this.calendarOptions.events.findIndex(event => event.id === id);
+              if (deleteIndex !== -1) {
+                this.calendarOptions.events.splice([deleteIndex],1);
+              } else {
+                console.error('Event not found with id:', id);
+              }
+            })
+            .catch(error => {
+              console.error('There was an error deleting the event:', error);
             });
         },
 
@@ -229,12 +273,10 @@ import axios from 'axios';
 
           axios.get('http://localhost:8000/api/google/events', config)
             .then(response => {
-              console.log('fetchEventList>>', response.data);
               this.calendarOptions.events = response.data;
-
             })
             .catch(error => {
-              console.error('There was an error adding the event:', error);
+              console.error('There was an error fetching the events:', error);
             });
         },
 
