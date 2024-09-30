@@ -162,10 +162,7 @@ import axios from 'axios';
         },
 
         handleSubmit(formData) {
-          const eventColor = this.getEventColor(formData.category);
           const currentEvent =  {
-                                color: eventColor.background,
-                                textColor: eventColor.textColor,
                                 start: formData.startDate,
                                 end: formData.endDate,
                                 title: formData.title,
@@ -236,27 +233,6 @@ import axios from 'axios';
             .catch(error => {
               console.error('There was an error deleting the event:', error);
             });
-        },
-
-        getEventColor(category) {
-          let selectedColor = {};
-          switch(category) {
-            case 'personal':
-              selectedColor = { background: '#28C76F1F', textColor: '#28C76F'};
-              break;
-            case 'family':
-              selectedColor = { background: 'rgb(255 171 0 / 11%)', textColor: '#FF9F43'};
-              break;
-            case 'holiday':
-              selectedColor = { background: '#28C76F1F', textColor: '#28C76F'};
-              break;
-            case 'etc':
-              selectedColor = { background: '#00CFE81F', textColor: '#00CFE8'};
-              break;
-            default:
-              selectedColor = { background: 'rgb(105 108 255 / 21%)', textColor: '#7367F0'};
-          }
-          return selectedColor;
         },
 
         getEvents(isFilter='false',selectedFilterList=[]) {

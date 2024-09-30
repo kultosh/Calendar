@@ -95,7 +95,9 @@ class GoogleController extends Controller
                 'start' => $event->getStart()->date,
                 'end' => $event->getEnd()->date,
                 'extendedProperties' => $event->getExtendedProperties() ? $event->getExtendedProperties()->getPrivate() : null,
-                'color' => '#00CFE8'
+                'color' => $this->getFrontendBackgroundColour($event->getColorId()),
+                'textColor' => $this->getFrontendTextColour($event->getColorId()),
+                'description' => $event->getColorId(),
             ];
         }
 
@@ -114,6 +116,7 @@ class GoogleController extends Controller
                 'summary' => $request->summary,
                 'start' => ['date' => $request->start, 'timeZone' => 'Asia/Kathmandu'],
                 'end' => ['date' => $request->end, 'timeZone' => 'Asia/Kathmandu'],
+                'colorId' => $this->getColorId($request->category),
                 'extendedProperties' => [
                     'private' => [
                         'category' => $request->category,
@@ -153,6 +156,8 @@ class GoogleController extends Controller
                 'timeZone' => 'Asia/Kathmandu',
             ]));
 
+            $event->setColorId($this->getColorId($request->category));
+
             if ($request->category) {
                 $extendedProperties = $event->getExtendedProperties() ?: new GoogleCalendar\EventExtendedProperties();
                 $extendedProperties->setPrivate(['category' => $request->category]);
@@ -166,7 +171,8 @@ class GoogleController extends Controller
                 'start' => $updatedEvent->getStart()->date,
                 'end' => $updatedEvent->getEnd()->date,
                 'extendedProperties' => $updatedEvent->getExtendedProperties() ? $updatedEvent->getExtendedProperties()->getPrivate() : null,
-                'color' => '#00CFE8'
+                'color' => $this->getFrontendBackgroundColour($event->getColorId()),
+                'textColor' => $this->getFrontendTextColour($event->getColorId()),
             ];
 
             return response()->json(['message' => 'Event updated successfully', 'event' => $data]);
@@ -195,5 +201,52 @@ class GoogleController extends Controller
             \Log::error('General Error: ' . $error->getMessage());
             return response()->json(['error' => 'Failed to delete event'], 500);
         }
-    }    
+    }
+
+    private function getColorId($category) {
+        switch($category) {
+            case 'personal':
+                return '4';  // Red
+            case 'business':
+                return '9';  // Bold blue
+            case 'family':
+                return '6';  // Orange
+            case 'holiday':
+                return '2';  // Green
+            case 'etc':
+                return '7';  // Turquoise
+            default:
+                return '1';  // Default to Blue
+        }
+    }
+
+    private function getFrontendBackgroundColour($colorId) {
+        switch($colorId) {
+            case '2':
+                return '#e0fcee'; //Holiday
+            case '6':
+                return '#fffaeb';  // Family
+            case '4':
+                return '#f9d1d800';  // Personal
+            case '7':
+                return '#dbfbfc';  // ETC
+            default:
+                return '#f4f0ff';  // Default to Blue
+        }
+    }
+    
+    private function getFrontendTextColour($colorId) {
+        switch($colorId) {
+            case '2':
+                return '#00e381'; //Green
+            case '6':
+                return '#ffb66a';  // Yellow
+            case '4':
+                return '#ff6a86';  // Personal
+            case '7':
+                return '#00d6eb';  // Sky Blue
+            default:
+                return '#a35cf4';  // Default to Blue
+        }
+    }
 }
