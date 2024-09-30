@@ -61,6 +61,7 @@
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
   import AddNewEvent from './components/AddNewEvent.vue'
+import axios from 'axios';
 
   export default {
       name: "AppCalendar",
@@ -161,6 +162,26 @@
                               };
           this.calendarOptions.events.push(curretnEvent);
           localStorage.setItem('calendarEventList', JSON.stringify(this.calendarOptions.events));
+          const token = localStorage.getItem('auth_token');
+          const config = {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          };
+
+          const eventData = {
+            summary: formData.title,
+            start: formData.startDate,
+            end: formData.endDate
+          };
+
+          axios.post('http://localhost:8000/api/google/events', eventData, config)
+            .then(response => {
+              alert(response.data.message);
+            })
+            .catch(error => {
+              console.error('There was an error adding the event:', error);
+            });
         },
 
         getEventColor(category) {

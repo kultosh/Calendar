@@ -16,7 +16,11 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
+            $table->string('google_id')->nullable(); // Google ID for OAuth
+            $table->string('google_token')->nullable(); // Access token for Google Calendar API
+            $table->string('google_refresh_token')->nullable(); // Refresh token for re-authentication
+            $table->timestamp('google_token_expires_at')->nullable(); // Expiry time for access token
             $table->rememberToken();
             $table->timestamps();
         });
