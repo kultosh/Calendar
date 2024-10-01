@@ -167,12 +167,6 @@
 
         handleSubmit(formData) {
           this.loading = true;
-          const currentEvent =  {
-                                start: formData.startDate,
-                                end: formData.endDate,
-                                title: formData.title,
-                                category: formData.category
-                              };
           const token = localStorage.getItem('auth_token');
           const config = {
             headers: {
@@ -212,7 +206,7 @@
             .then(response => {
               alert(response.data.message);
               if(this.selectedFilterCategorgies.includes(formData.category)) {
-                this.calendarOptions.events.push(currentEvent);
+                this.calendarOptions.events.push(response.data.event);
               }
             })
             .catch(error => {
