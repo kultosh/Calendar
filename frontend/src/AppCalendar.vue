@@ -120,7 +120,8 @@
                   isCheck: true,
                 }
               ],
-              loading: false
+              loading: false,
+              url: process.env.VUE_APP_ROOT_API+'/google/events'
           }
       },
       mounted() {
@@ -182,7 +183,7 @@
           };
 
           if(this.isEventEdit) {
-            axios.put('http://localhost:8000/api/google/events/'+formData.id, eventData, config)
+            axios.put(this.url+'/'+formData.id, eventData, config)
             .then(response => {
               alert(response.data.message);
               const updateIndex = this.calendarOptions.events.findIndex(event => event.id === formData.id);
@@ -202,7 +203,7 @@
               this.loading = false;
             });
           } else {
-            axios.post('http://localhost:8000/api/google/events', eventData, config)
+            axios.post(this.url, eventData, config)
             .then(response => {
               alert(response.data.message);
               if(this.selectedFilterCategorgies.includes(formData.category)) {
@@ -226,7 +227,7 @@
               Authorization: `Bearer ${token}`,
             },
           };
-          axios.delete('http://localhost:8000/api/google/events/'+id, config)
+          axios.delete(this.url+'/'+id, config)
             .then(response => {
               alert(response.data.message);
               const deleteIndex = this.calendarOptions.events.findIndex(event => event.id === id);
@@ -256,8 +257,7 @@
               'selectedFilterList': selectedFilterList
             }
           };
-
-          axios.get('http://localhost:8000/api/google/events', config)
+          axios.get(this.url, config)
             .then(response => {
               this.calendarOptions.events = response.data;
             })
