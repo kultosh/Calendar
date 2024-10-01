@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    <calendar-loader v-if="loading" />
     <div class="calendar-row">
       <div class="calendar-col">
         <div class="sidebar">
@@ -41,13 +42,15 @@
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
   import AddNewEvent from './components/AddNewEvent.vue'
-import axios from 'axios';
+  import CalendarLoader from './components/CalendarLoader.vue'
+  import axios from 'axios';
 
   export default {
       name: "AppCalendar",
       components: {
           FullCalendar,
           'event-form': AddNewEvent,
+          'calendar-loader': CalendarLoader
       },
       data: function() {
           return {
@@ -117,6 +120,7 @@ import axios from 'axios';
                   isCheck: true,
                 }
               ],
+              loading: false
           }
       },
       mounted() {
@@ -162,6 +166,7 @@ import axios from 'axios';
         },
 
         handleSubmit(formData) {
+          this.loading = true;
           const currentEvent =  {
                                 start: formData.startDate,
                                 end: formData.endDate,
@@ -198,6 +203,9 @@ import axios from 'axios';
             })
             .catch(error => {
               console.error('There was an error adding the event:', error);
+            })
+            .finally(() => {
+              this.loading = false;
             });
           } else {
             axios.post('http://localhost:8000/api/google/events', eventData, config)
@@ -209,11 +217,15 @@ import axios from 'axios';
             })
             .catch(error => {
               console.error('There was an error updating the event:', error);
+            })
+            .finally(() => {
+              this.loading = false;
             });
           }
         },
 
         handleDelete(id) {
+          this.loading = true;
           const token = localStorage.getItem('auth_token');
           const config = {
             headers: {
@@ -232,10 +244,14 @@ import axios from 'axios';
             })
             .catch(error => {
               console.error('There was an error deleting the event:', error);
-            });
+            })
+            .finally(() => {
+              this.loading = false;
+            })
         },
 
         getEvents(isFilter='false',selectedFilterList=[]) {
+          this.loading = true;
           const token = localStorage.getItem('auth_token');
           const config = {
             headers: {
@@ -253,6 +269,9 @@ import axios from 'axios';
             })
             .catch(error => {
               console.error('There was an error fetching the events:', error);
+            })
+            .finally(() => {
+              this.loading = false;
             });
         },
 
