@@ -1,8 +1,8 @@
 import Vue from 'vue';
 import Router from 'vue-router';
-import GoogleLogin from '@/components/GoogleLogin.vue';
-import GoogleAuth from '@/components/GoogleAuth.vue';
-import AppCalendar from '@/AppCalendar.vue';
+import GoogleLogin from '@/components/auth/GoogleLogin';
+import GoogleAuth from '@/components/auth/GoogleAuth';
+import AppCalendar from '@/components/calendar/AppCalendar';
 
 Vue.use(Router);
 

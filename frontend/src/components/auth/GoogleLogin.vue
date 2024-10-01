@@ -13,12 +13,12 @@ import axios from 'axios';
 export default {
   methods: {
     loginWithGoogle() {
-      axios.get('http://localhost:8000/api/google/redirect')
+      axios.get(process.env.VUE_APP_ROOT_API+'/google/redirect')
         .then(response => {
           window.location.href = response.data.url;
         })
         .catch(error => {
-          console.error('Google login error:', error);
+          alert('Google login error:', error);
         });
     }
   }

@@ -10,6 +10,10 @@
           <span class="event-validation-msg" v-if="titleError!==''">{{ titleError }}</span>
         </div>
         <div class="form-group">
+          <label for="title">Description: <span class="event-required" title="REQUIRED FIELD">*</span></label>
+          <textarea name="description" for="description" id="description" cols="30" rows="4" v-model="form.description" class="form-control"></textarea>
+        </div>
+        <div class="form-group">
           <label for="startDate">Start Date: <span class="event-required" title="REQUIRED FIELD">*</span></label>
           <input type="date" id="startDate" v-model="form.startDate" class="form-control" :disabled="isFieldDisable" @input="startDateError=''" />
           <span class="event-validation-msg" v-if="startDateError!==''">{{ startDateError }}</span>
@@ -79,7 +83,8 @@
           title: '',
           startDate: '',
           endDate: '',
-          category: ''
+          category: '',
+          description: ''
         },
         isFieldDisable: false,
         submitButton: 'Submit',
@@ -113,7 +118,8 @@
           title: '',
           startDate: '',
           endDate: '',
-          category: ''
+          category: '',
+          descritpion: ''
         };
         this.submitButton = 'Submit';
       },
@@ -164,6 +170,7 @@
             this.form.endDate = this.formData.endDate;
             this.form.title = this.formData.title;
             this.form.category = this.formData.category;
+            this.form.description = this.formData.description;
           }
         }
       }

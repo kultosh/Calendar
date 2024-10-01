@@ -41,15 +41,15 @@
   import timeGridPlugin from '@fullcalendar/timegrid'
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
-  import AddNewEvent from './components/AddNewEvent.vue'
-  import CalendarLoader from './components/CalendarLoader.vue'
+  import AddUpdateEvent from './AddUpdateEvent.vue'
+  import CalendarLoader from './CalendarLoader.vue'
   import axios from 'axios';
 
   export default {
       name: "AppCalendar",
       components: {
           FullCalendar,
-          'event-form': AddNewEvent,
+          'event-form': AddUpdateEvent,
           'calendar-loader': CalendarLoader
       },
       data: function() {
@@ -120,17 +120,14 @@
                   isCheck: true,
                 }
               ],
-              loading: false
+              loading: false,
+              url: process.env.VUE_APP_ROOT_API+'/google/events'
           }
       },
       mounted() {
         this.getEvents();
       },
       methods: {
-        handleWeekendsToggle() {
-          this.calendarOptions.weekends = !this.calendarOptions.weekends
-        },
-
         handleDateSelect(selectInfo) {
           this.selectedEventData = {
             startDate: selectInfo.startStr,
@@ -146,6 +143,7 @@
             endDate: clickInfo.event.endStr,
             title: clickInfo.event.title,
             category: clickInfo.event.extendedProps.extendedProperties ? clickInfo.event.extendedProps.extendedProperties.category : null,
+            description: clickInfo.event.extendedProps.description || null,
           };
           this.isEventEdit = true;
           this.isModalVisible = true;
@@ -167,12 +165,6 @@
 
         handleSubmit(formData) {
           this.loading = true;
-          const currentEvent =  {
-                                start: formData.startDate,
-                                end: formData.endDate,
-                                title: formData.title,
-                                category: formData.category
-                              };
           const token = localStorage.getItem('auth_token');
           const config = {
             headers: {
@@ -185,10 +177,18 @@
             start: formData.startDate,
             end: formData.endDate,
             category: formData.category,
+            description: formData.description
           };
 
           if(this.isEventEdit) {
-            axios.put('http://localhost:8000/api/google/events/'+formData.id, eventData, config)
+            this.updateEvent(this.url+'/'+formData.id, eventData, config, formData);
+          } else {
+            this.storeEvent(this.url, eventData, config, formData);
+          }
+        },
+
+        updateEvent(url,data,config,formData) {
+          axios.put(url, data, config)
             .then(response => {
               alert(response.data.message);
               const updateIndex = this.calendarOptions.events.findIndex(event => event.id === formData.id);
@@ -198,30 +198,31 @@
                   this.calendarOptions.events.push(response.data.event);
                 });
               } else {
-                console.error('Event not found with id:', formData.id);
+                alert('Event not found');
               }
             })
             .catch(error => {
-              console.error('There was an error adding the event:', error);
+              alert('There was an error adding the event:', error);
             })
             .finally(() => {
               this.loading = false;
             });
-          } else {
-            axios.post('http://localhost:8000/api/google/events', eventData, config)
+        },
+
+        storeEvent(url, data, config, formData) {
+          axios.post(url, data, config)
             .then(response => {
               alert(response.data.message);
               if(this.selectedFilterCategorgies.includes(formData.category)) {
-                this.calendarOptions.events.push(currentEvent);
+                this.calendarOptions.events.push(response.data.event);
               }
             })
             .catch(error => {
-              console.error('There was an error updating the event:', error);
+              alert('There was an error updating the event:', error);
             })
             .finally(() => {
               this.loading = false;
             });
-          }
         },
 
         handleDelete(id) {
@@ -232,18 +233,18 @@
               Authorization: `Bearer ${token}`,
             },
           };
-          axios.delete('http://localhost:8000/api/google/events/'+id, config)
+          axios.delete(this.url+'/'+id, config)
             .then(response => {
               alert(response.data.message);
               const deleteIndex = this.calendarOptions.events.findIndex(event => event.id === id);
               if (deleteIndex !== -1) {
                 this.calendarOptions.events.splice([deleteIndex],1);
               } else {
-                console.error('Event not found with id:', id);
+                alert('Event not found with id:', id);
               }
             })
             .catch(error => {
-              console.error('There was an error deleting the event:', error);
+              alert('There was an error deleting the event:', error);
             })
             .finally(() => {
               this.loading = false;
@@ -262,13 +263,12 @@
               'selectedFilterList': selectedFilterList
             }
           };
-
-          axios.get('http://localhost:8000/api/google/events', config)
+          axios.get(this.url, config)
             .then(response => {
               this.calendarOptions.events = response.data;
             })
             .catch(error => {
-              console.error('There was an error fetching the events:', error);
+              alert('There was an error fetching the events:', error);
             })
             .finally(() => {
               this.loading = false;

@@ -18,7 +18,7 @@ export default {
       this.$router.push('/app-calendar');
     } else {
       // Handle error if token is not found
-      console.error('No token found in the URL');
+      alert('No token found in the URL');
       this.$router.push('/login');
     }
   }
