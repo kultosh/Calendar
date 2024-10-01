@@ -41,8 +41,8 @@
   import timeGridPlugin from '@fullcalendar/timegrid'
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
-  import AddNewEvent from './components/AddNewEvent.vue'
-  import CalendarLoader from './components/CalendarLoader.vue'
+  import AddNewEvent from './AddNewEvent.vue'
+  import CalendarLoader from './CalendarLoader.vue'
   import axios from 'axios';
 
   export default {
@@ -183,7 +183,14 @@
           };
 
           if(this.isEventEdit) {
-            axios.put(this.url+'/'+formData.id, eventData, config)
+            this.updateEvent(this.url+'/'+formData.id, eventData, config, formData);
+          } else {
+            this.storeEvent(this.url, eventData, config, formData);
+          }
+        },
+
+        updateEvent(url,data,config,formData) {
+          axios.put(url, data, config)
             .then(response => {
               alert(response.data.message);
               const updateIndex = this.calendarOptions.events.findIndex(event => event.id === formData.id);
@@ -193,7 +200,7 @@
                   this.calendarOptions.events.push(response.data.event);
                 });
               } else {
-                console.error('Event not found with id:', formData.id);
+                console.error('Event not found');
               }
             })
             .catch(error => {
@@ -202,8 +209,10 @@
             .finally(() => {
               this.loading = false;
             });
-          } else {
-            axios.post(this.url, eventData, config)
+        },
+
+        storeEvent(url, data, config, formData) {
+          axios.post(url, data, config)
             .then(response => {
               alert(response.data.message);
               if(this.selectedFilterCategorgies.includes(formData.category)) {
@@ -216,7 +225,6 @@
             .finally(() => {
               this.loading = false;
             });
-          }
         },
 
         handleDelete(id) {
