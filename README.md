@@ -1,66 +1,112 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<p align="center"><a href="https://share.nmblc.cloud/355807c4" target="_blank"><img src="https://share.nmblc.cloud/355807c4" width="400" alt="Calendar"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## About Calendar
 
-## About Laravel
+This project integrates Google Calendar with a frontend built using Vue.js and a backend built using Laravel. The application allows users to authenticate via Google OAuth and perform CRUD operations on their Google Calendar events along with filtering the events.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Table of Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. [Prerequisites](#prerequisites)
+2. [Installation](#installation)
+3. [Configuration](#configuration)
+4. [Usage](#usage)
+5. [API Endpoints](#api-endpoints)
+6. [Technologies Used](#technologies-used)
+7. [Contributing](#contributing)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Prerequisites
 
-## Learning Laravel
+Before you begin, ensure you have the following installed on your local machine:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- [Node.js](https://nodejs.org/) (v14.x or higher)
+- [Vue CLI](https://cli.vuejs.org/)
+- [PHP](https://www.php.net/) (v8.0 or higher)
+- [Composer](https://getcomposer.org/)
+- [Google API Client Library](https://github.com/googleapis/google-api-php-client)
+  
+You will also need a Google account and to set up Google API credentials via [Google Cloud Console](https://console.cloud.google.com/).
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Installation
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Clone the repository:
 
-## Laravel Sponsors
+```bash
+git clone https://github.com/kultosh/Calendar.git
+cd calendar
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Install the dependencies :
 
-### Premium Partners
+#### For the Laravel Backend:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```bash
+composer install
+```
+#### For the Vue Frontend:
+```bash
+cd frontend
+npm install
+```
+
+## Configuration
+
+### Google API Setup
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project and enable the "Google Calendar API."
+3. Create OAuth 2.0 credentials and get your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+4. Also please add Authorised redirect URLs as "your-backend-url/api/auth/google/callback"
+5. Add the following credentials to your .env file in the Laravel root directory:
+```bash
+GOOGLE_CLIENT_ID="your-client-id"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+GOOGLE_REDIRECT_URI="your-backend-url/api/auth/google/callback"
+GOOGLE_SCOPE="https://www.googleapis.com/auth/calendar"
+GOOGLE_TIMEZONE="Asia/Kathmandu"
+```
+
+## Usage
+
+### Running the Application
+
+#### For the backend:
+```bash
+php artisan serve
+```
+
+#### For the frontend:
+```bash
+cd frontend
+npm run serve
+```
+
+## Google OAuth Authentication
+
+1. Visit the login page at your-frontend-url/login.
+2. Click the "Login with Google" button to authenticate.
+3. After authentication, you will be redirected to the calendar page, where you can view and manage events.
+
+
+## API Endpoints
+
+| HTTP Method | Endpoint                         | Description                                 |
+|-------------|----------------------------------|---------------------------------------------|
+| `GET`       | `/api/auth/google/redirect`      | Redirects to Google OAuth for authentication|
+| `GET`       | `/api/auth/google/callback`      | Handles the Google OAuth callback           |
+| `GET`       | `/api/google/events`             | Fetches all events from Google Calendar     |
+| `POST`      | `/api/google/events`             | Adds a new event to Google Calendar         |
+| `PUT`       | `/api/google/events/{eventId}`   | Updates an existing event in Google Calendar|
+| `DELETE`    | `/api/google/events/{eventId}`   | Deletes an event from Google Calendar       |
+
+
+## Middleware Protected Routes
+- The /google/events endpoints are protected by Laravel Sanctum, so ensure that the user is authenticated before making any API requests.
+
+
+## Technologies Used
+- Frontend: Vue.js, Axios, FullCalendar, VueRouter
+- Backend: Laravel, Sanctum, Google API Client
+- API: Google Calendar API
+
 
 ## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Feel free to fork this repository and make your changes. If you would like to contribute, submit a pull request.
