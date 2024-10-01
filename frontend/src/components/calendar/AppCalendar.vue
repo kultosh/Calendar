@@ -147,6 +147,7 @@
             endDate: clickInfo.event.endStr,
             title: clickInfo.event.title,
             category: clickInfo.event.extendedProps.extendedProperties ? clickInfo.event.extendedProps.extendedProperties.category : null,
+            description: clickInfo.event.extendedProps.description || null,
           };
           this.isEventEdit = true;
           this.isModalVisible = true;
@@ -180,6 +181,7 @@
             start: formData.startDate,
             end: formData.endDate,
             category: formData.category,
+            description: formData.description
           };
 
           if(this.isEventEdit) {

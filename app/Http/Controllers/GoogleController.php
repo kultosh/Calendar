@@ -69,7 +69,7 @@ class GoogleController extends Controller
     public function addGoogleEvent(Request $request)
     {
         try {
-            $storedEvent = $this->googleCalendarService->addEvent($request->user(), $request->only(['summary', 'start', 'end', 'category']));
+            $storedEvent = $this->googleCalendarService->addEvent($request->user(), $request->only(['summary', 'start', 'end', 'category','description']));
             return response()->json(['message' => 'Event created', 'event' => $this->formatEvent($storedEvent)]);
         } catch (\Exception $error) {
             \Log::info($error->getMessage());
@@ -79,7 +79,7 @@ class GoogleController extends Controller
     public function updateGoogleEvent(Request $request, $eventId)
     {
         try {
-            $updatedEvent = $this->googleCalendarService->updateEvent($request->user(), $eventId, $request->only(['summary', 'start', 'end', 'category']));
+            $updatedEvent = $this->googleCalendarService->updateEvent($request->user(), $eventId, $request->only(['summary', 'start', 'end', 'category','description']));
             return response()->json(['message' => 'Event updated successfully', 'event' => $this->formatEvent($updatedEvent)]);
         } catch (\Exception $error) {
             \Log::error($error->getMessage());
@@ -101,6 +101,7 @@ class GoogleController extends Controller
         return [
             'id' => $data->getId(),
             'title' => $data->getSummary(),
+            'description' => $data->getDescription(),
             'start' => $data->getStart()->date,
             'end' => $data->getEnd()->date,
             'extendedProperties' => $data->getExtendedProperties() ? $data->getExtendedProperties()->getPrivate() : null,

@@ -113,6 +113,7 @@ class GoogleCalendarService
         $calendarService = new GoogleCalendar($this->client);
         $event = new GoogleCalendar\Event([
             'summary' => $eventData['summary'],
+            'description' => $eventData['description'],
             'start' => ['date' => $eventData['start'], 'timeZone' => $this->timezone],
             'end' => ['date' => $eventData['end'], 'timeZone' => $this->timezone],
             'colorId' => $this->getColorId($eventData['category']),
@@ -135,6 +136,7 @@ class GoogleCalendarService
         $event = $calendarService->events->get('primary', $eventId);
 
         $event->setSummary($eventData['summary'] ?? $event->getSummary());
+        $event->setDescription($eventData['description'] ?? $event->getDescription());
         $event->setStart(new GoogleCalendar\EventDateTime([
             'date' => $eventData['start'],
             'timeZone' => $this->timezone,
