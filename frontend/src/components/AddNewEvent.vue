@@ -5,25 +5,30 @@
       <h2>Event Details</h2>
       <form @submit.prevent="submitForm">
         <div class="form-group">
-          <label for="title">Title:</label>
-          <input type="text" id="title" v-model="form.title" required class="form-control" />
+          <label for="title">Title: <span class="event-required" title="REQUIRED FIELD">*</span></label>
+          <input type="text" id="title" v-model="form.title" class="form-control" @input="titleError=''" />
+          <span class="event-validation-msg" v-if="titleError!==''">{{ titleError }}</span>
         </div>
         <div class="form-group">
-          <label for="startDate">Start Date:</label>
-          <input type="date" id="startDate" v-model="form.startDate" required class="form-control" :disabled="isFieldDisable" />
+          <label for="startDate">Start Date: <span class="event-required" title="REQUIRED FIELD">*</span></label>
+          <input type="date" id="startDate" v-model="form.startDate" class="form-control" :disabled="isFieldDisable" @input="startDateError=''" />
+          <span class="event-validation-msg" v-if="startDateError!==''">{{ startDateError }}</span>
         </div>
         <div class="form-group">
-          <label for="endDate">End Date:</label>
-          <input type="date" id="endDate" v-model="form.endDate" required class="form-control" :disabled="isFieldDisable" />
+          <label for="endDate">End Date: <span class="event-required" title="REQUIRED FIELD">*</span></label>
+          <input type="date" id="endDate" v-model="form.endDate" class="form-control" :disabled="isFieldDisable" @input="endDateError=''" />
+          <span class="event-validation-msg" v-if="endDateError!==''">{{ endDateError }}</span>
         </div>
         <div class="form-group">
-          <label for="category">Category:</label>
-          <select id="category" v-model="form.category" required class="form-control">
+          <label for="category">Category: <span class="event-required" title="REQUIRED FIELD">*</span></label>
+          <select id="category" v-model="form.category" class="form-control" @click="categoryError=''">
             <option value="" disabled>Select a category</option>
             <option v-for="(category,index) in categoryList" :key="index" :value="category.value">{{category.text}}</option>
           </select>
+          <span class="event-validation-msg" v-if="categoryError!==''">{{ categoryError }}</span>
         </div>
-        <button type="submit" class="btn">Submit</button>
+        <button type="submit" class="btn">{{submitButton}}</button>
+        <button type="submit" class="btn btn-danger" v-if="isEdit" @click="deleteEvent">{{deleteButton}}</button>
       </form>
     </div>
   </div>
@@ -70,12 +75,19 @@
           }
         ],
         form: {
+          id: '',
           title: '',
           startDate: '',
           endDate: '',
           category: ''
         },
         isFieldDisable: false,
+        submitButton: 'Submit',
+        deleteButton: 'Delete',
+        titleError: '',
+        startDateError: '',
+        endDateError: '',
+        categoryError: '',
       };
     },
     methods: {
@@ -84,17 +96,58 @@
         this.resetForm();
       },
       submitForm() {
-        this.$emit('submit', this.form);
+        if(this.isValid()) {
+          this.$emit('submit', this.form);
+          this.closeModal();
+          this.resetForm();
+        }
+      },
+      deleteEvent() {
+        this.$emit('delete', this.form.id);
         this.closeModal();
         this.resetForm();
       },
       resetForm() {
         this.form = {
+          id: '',
           title: '',
           startDate: '',
           endDate: '',
           category: ''
         };
+        this.submitButton = 'Submit';
+      },
+      isValid() {
+        let valid = true;
+        if (!this.form.title) {
+            this.titleError = "Please enter the 'Title' !";
+            valid = false;
+        } else {
+            this.titleError = '';
+        }
+
+        if (!this.form.startDate) {
+            this.startDateError = "Please select the 'Start Date' !";
+            valid = false;
+        } else {
+            this.startDateError = '';
+        }
+
+        if (!this.form.endDate) {
+            this.endDateError = "Please select the 'End Date' !";
+            valid = false;
+        } else {
+            this.endDateError = '';
+        }
+
+        if (!this.form.category) {
+            this.categoryError = "Please select the 'Category' !";
+            valid = false;
+        } else {
+            this.categoryError = '';
+        }
+
+        return valid;
       }
     },
     watch: {
@@ -104,6 +157,13 @@
             this.form.startDate = this.formData.startDate;
             this.form.endDate = this.formData.endDate;
             this.isFieldDisable = true;
+          } else if(this.isEdit) {
+            this.submitButton = 'Update';
+            this.form.id = this.formData.id;
+            this.form.startDate = this.formData.startDate;
+            this.form.endDate = this.formData.endDate;
+            this.form.title = this.formData.title;
+            this.form.category = this.formData.category;
           }
         }
       }
@@ -178,5 +238,24 @@
 
   .btn:hover {
     background-color: #5a54c3;
+  }
+
+  .btn-danger {
+    background-color: #dc3545;
+    margin-left: 10px;
+  }
+
+  .btn-danger:hover {
+    background-color: #d11f31;
+  }
+
+  .event-required {
+    float: right;
+    color: #d11f31;
+  }
+
+  .event-validation-msg {
+    color: #d11f31;
+    font-size: 12px;
   }
 </style>

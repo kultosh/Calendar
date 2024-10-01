@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    <calendar-loader v-if="loading" />
     <div class="calendar-row">
       <div class="calendar-col">
         <div class="sidebar">
@@ -7,29 +8,9 @@
           <div class="calendar-filter">
             <label for="filter">FILTER</label>
             <ul>
-              <li>
-                <input type="checkbox" id="view-all">
-                <label for="view-all">View All</label>
-              </li>
-              <li>
-                <input type="checkbox" id="personal">
-                <label for="personal">Personal</label>
-              </li>
-              <li>
-                <input type="checkbox" id="business">
-                <label for="business">Business</label>
-              </li>
-              <li>
-                <input type="checkbox" id="family">
-                <label for="family">Family</label>
-              </li>
-              <li>
-                <input type="checkbox" id="holiday">
-                <label for="holiday">Holiday</label>
-              </li>
-              <li>
-                <input type="checkbox" id="etc">
-                <label for="etc">ETC</label>
+              <li v-for="(filterCategory,index) in filterList" :key="index">
+                <input type="checkbox" :id="filterCategory.value" v-model="filterCategory.isCheck" @click="handleFilterEvent($event,filterCategory.value,index)">
+                <label :for="filterCategory.value">{{filterCategory.text}}</label>
               </li>
             </ul>
           </div>
@@ -50,7 +31,7 @@
         </FullCalendar>
       </div>
     </div>
-    <event-form :isVisible="isModalVisible" :formData="selectedEventData" :isEdit="isEventEdit" @close="closeModal" @submit="handleSubmit" />
+    <event-form :isVisible="isModalVisible" :formData="selectedEventData" :isEdit="isEventEdit" @close="closeModal" @submit="handleSubmit" @delete="handleDelete" />
   </div>
 </template>
 
@@ -61,12 +42,15 @@
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
   import AddNewEvent from './components/AddNewEvent.vue'
+  import CalendarLoader from './components/CalendarLoader.vue'
+  import axios from 'axios';
 
   export default {
       name: "AppCalendar",
       components: {
           FullCalendar,
           'event-form': AddNewEvent,
+          'calendar-loader': CalendarLoader
       },
       data: function() {
           return {
@@ -98,23 +82,53 @@
                   select: this.handleDateSelect,
                   eventClick: this.handleEventClick,
                   eventsSet: this.handleEvents,
-                  events: [{id: 1, color: '#00CFE81F', textColor: '#00CFE8', start: '2024-09-24', end: '2024-09-27', title: 'First Event'}]
+                  events: []
               },
               isModalVisible: false,
               isEventEdit: false,
               selectedEventData: {},
+              selectedFilterCategorgies: ['view-all','personal','business','family','holiday','etc'],
+              filterList: [
+                {
+                  text: 'View All',
+                  value: 'view-all',
+                  isCheck: true,
+                },
+                {
+                  text: 'Personal',
+                  value: 'personal',
+                  isCheck: true,
+                },
+                {
+                  text: 'Business',
+                  value: 'business',
+                  isCheck: true,
+                },
+                {
+                  text: 'Family',
+                  value: 'family',
+                  isCheck: true,
+                },
+                {
+                  text: 'Holiday',
+                  value: 'holiday',
+                  isCheck: true,
+                },
+                {
+                  text: 'ETC',
+                  value: 'etc',
+                  isCheck: true,
+                }
+              ],
+              loading: false
           }
       },
       mounted() {
-        /** Test */
-        const getEvents = JSON.parse(localStorage.getItem('calendarEventList'));
-        if(!!getEvents && getEvents.length > 0) {
-          this.calendarOptions.events = getEvents;
-        }
+        this.getEvents();
       },
       methods: {
         handleWeekendsToggle() {
-          this.calendarOptions.weekends = !this.calendarOptions.weekends // update a property
+          this.calendarOptions.weekends = !this.calendarOptions.weekends
         },
 
         handleDateSelect(selectInfo) {
@@ -126,13 +140,15 @@
         },
 
         handleEventClick(clickInfo) {
-          if (confirm(`Are you sure you want to delete the event '${clickInfo.event.title}'`)) {
-            let filterEventList = this.calendarOptions.events.filter((dayEvent) => {
-              return dayEvent.id !== parseInt(clickInfo.event.id);
-            });
-            this.calendarOptions.events = filterEventList;
-            localStorage.setItem('calendarEventList', JSON.stringify(filterEventList));
-          }
+          this.selectedEventData = {
+            id: clickInfo.event.id,
+            startDate: clickInfo.event.startStr,
+            endDate: clickInfo.event.endStr,
+            title: clickInfo.event.title,
+            category: clickInfo.event.extendedProps.extendedProperties ? clickInfo.event.extendedProps.extendedProperties.category : null,
+          };
+          this.isEventEdit = true;
+          this.isModalVisible = true;
         },
 
         handleEvents(events) {
@@ -150,39 +166,151 @@
         },
 
         handleSubmit(formData) {
-          const eventColor = this.getEventColor(formData.category);
-          const curretnEvent =  {
-                                id: this.calendarOptions.events.length > 0 ? this.calendarOptions.events.length+1 : 1,
-                                color: eventColor.background,
-                                textColor: eventColor.textColor,
+          this.loading = true;
+          const currentEvent =  {
                                 start: formData.startDate,
                                 end: formData.endDate,
-                                title: formData.title
+                                title: formData.title,
+                                category: formData.category
                               };
-          this.calendarOptions.events.push(curretnEvent);
-          localStorage.setItem('calendarEventList', JSON.stringify(this.calendarOptions.events));
+          const token = localStorage.getItem('auth_token');
+          const config = {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          };
+
+          const eventData = {
+            summary: formData.title,
+            start: formData.startDate,
+            end: formData.endDate,
+            category: formData.category,
+          };
+
+          if(this.isEventEdit) {
+            axios.put('http://localhost:8000/api/google/events/'+formData.id, eventData, config)
+            .then(response => {
+              alert(response.data.message);
+              const updateIndex = this.calendarOptions.events.findIndex(event => event.id === formData.id);
+              if (updateIndex !== -1) {
+                this.calendarOptions.events.splice([updateIndex],1);
+                this.$nextTick(() => {
+                  this.calendarOptions.events.push(response.data.event);
+                });
+              } else {
+                console.error('Event not found with id:', formData.id);
+              }
+            })
+            .catch(error => {
+              console.error('There was an error adding the event:', error);
+            })
+            .finally(() => {
+              this.loading = false;
+            });
+          } else {
+            axios.post('http://localhost:8000/api/google/events', eventData, config)
+            .then(response => {
+              alert(response.data.message);
+              if(this.selectedFilterCategorgies.includes(formData.category)) {
+                this.calendarOptions.events.push(currentEvent);
+              }
+            })
+            .catch(error => {
+              console.error('There was an error updating the event:', error);
+            })
+            .finally(() => {
+              this.loading = false;
+            });
+          }
         },
 
-        getEventColor(category) {
-          let selectedColor = {};
-          switch(category) {
-            case 'personal':
-              selectedColor = { background: '#28C76F1F', textColor: '#28C76F'};
-              break;
-            case 'family':
-              selectedColor = { background: 'rgb(255 171 0 / 11%)', textColor: '#FF9F43'};
-              break;
-            case 'holiday':
-              selectedColor = { background: '#28C76F1F', textColor: '#28C76F'};
-              break;
-            case 'etc':
-              selectedColor = { background: '#00CFE81F', textColor: '#00CFE8'};
-              break;
-            default:
-              selectedColor = { background: 'rgb(105 108 255 / 21%)', textColor: '#7367F0'};
+        handleDelete(id) {
+          this.loading = true;
+          const token = localStorage.getItem('auth_token');
+          const config = {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          };
+          axios.delete('http://localhost:8000/api/google/events/'+id, config)
+            .then(response => {
+              alert(response.data.message);
+              const deleteIndex = this.calendarOptions.events.findIndex(event => event.id === id);
+              if (deleteIndex !== -1) {
+                this.calendarOptions.events.splice([deleteIndex],1);
+              } else {
+                console.error('Event not found with id:', id);
+              }
+            })
+            .catch(error => {
+              console.error('There was an error deleting the event:', error);
+            })
+            .finally(() => {
+              this.loading = false;
+            })
+        },
+
+        getEvents(isFilter='false',selectedFilterList=[]) {
+          this.loading = true;
+          const token = localStorage.getItem('auth_token');
+          const config = {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            params: {
+              'isFilter': isFilter,
+              'selectedFilterList': selectedFilterList
+            }
+          };
+
+          axios.get('http://localhost:8000/api/google/events', config)
+            .then(response => {
+              this.calendarOptions.events = response.data;
+            })
+            .catch(error => {
+              console.error('There was an error fetching the events:', error);
+            })
+            .finally(() => {
+              this.loading = false;
+            });
+        },
+
+        handleFilterEvent(event,filterCategory,index) {
+          if(filterCategory==='view-all') {
+            if(event.target.checked) {
+              this.filterList.map(data => {
+                data.isCheck = true;
+                this.selectedFilterCategorgies.push(data.value);
+              });
+              this.getEvents();
+            } else {
+              this.filterList.map(data => {
+                data.isCheck = false;
+              });
+              this.selectedFilterCategorgies=[];
+              this.calendarOptions.events = [];
+            }
+            return true;
           }
-          return selectedColor;
-        }
+          
+          if(event.target.checked) {
+            this.filterList[index].isCheck = true;
+            this.selectedFilterCategorgies.push(filterCategory);
+          } else {
+            this.filterList[0].isCheck = false;
+            this.filterList[index].isCheck = false;
+            const selectedFilterList = this.selectedFilterCategorgies;
+            this.selectedFilterCategorgies = selectedFilterList.filter(data => {
+              return data !== filterCategory;
+            });
+          }
+
+          if(this.selectedFilterCategorgies.length==0) {
+            this.calendarOptions.events = [];
+          } else {
+            this.getEvents('true',this.selectedFilterCategorgies);
+          }
+        },
       }
   }
 </script>
