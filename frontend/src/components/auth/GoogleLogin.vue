@@ -18,7 +18,7 @@ export default {
           window.location.href = response.data.url;
         })
         .catch(error => {
-          console.error('Google login error:', error);
+          alert('Google login error:', error);
         });
     }
   }

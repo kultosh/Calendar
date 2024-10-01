@@ -41,7 +41,7 @@
   import timeGridPlugin from '@fullcalendar/timegrid'
   import interactionPlugin from '@fullcalendar/interaction'
   import listMonthPlugin from '@fullcalendar/list'
-  import AddNewEvent from './AddNewEvent.vue'
+  import AddUpdateEvent from './AddUpdateEvent.vue'
   import CalendarLoader from './CalendarLoader.vue'
   import axios from 'axios';
 
@@ -49,7 +49,7 @@
       name: "AppCalendar",
       components: {
           FullCalendar,
-          'event-form': AddNewEvent,
+          'event-form': AddUpdateEvent,
           'calendar-loader': CalendarLoader
       },
       data: function() {
@@ -128,10 +128,6 @@
         this.getEvents();
       },
       methods: {
-        handleWeekendsToggle() {
-          this.calendarOptions.weekends = !this.calendarOptions.weekends
-        },
-
         handleDateSelect(selectInfo) {
           this.selectedEventData = {
             startDate: selectInfo.startStr,
@@ -202,11 +198,11 @@
                   this.calendarOptions.events.push(response.data.event);
                 });
               } else {
-                console.error('Event not found');
+                alert('Event not found');
               }
             })
             .catch(error => {
-              console.error('There was an error adding the event:', error);
+              alert('There was an error adding the event:', error);
             })
             .finally(() => {
               this.loading = false;
@@ -222,7 +218,7 @@
               }
             })
             .catch(error => {
-              console.error('There was an error updating the event:', error);
+              alert('There was an error updating the event:', error);
             })
             .finally(() => {
               this.loading = false;
@@ -244,11 +240,11 @@
               if (deleteIndex !== -1) {
                 this.calendarOptions.events.splice([deleteIndex],1);
               } else {
-                console.error('Event not found with id:', id);
+                alert('Event not found with id:', id);
               }
             })
             .catch(error => {
-              console.error('There was an error deleting the event:', error);
+              alert('There was an error deleting the event:', error);
             })
             .finally(() => {
               this.loading = false;
@@ -272,7 +268,7 @@
               this.calendarOptions.events = response.data;
             })
             .catch(error => {
-              console.error('There was an error fetching the events:', error);
+              alert('There was an error fetching the events:', error);
             })
             .finally(() => {
               this.loading = false;
