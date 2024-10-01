@@ -19,6 +19,8 @@ class GoogleController extends Controller
         $this->client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
         $this->client->setRedirectUri(env('GOOGLE_REDIRECT_URI'));
         $this->client->addScope(['https://www.googleapis.com/auth/calendar', 'email', 'profile']); // Include profile scope
+        $this->client->setAccessType('offline'); // Ensure offline access to get the refresh token
+        $this->client->setPrompt('consent'); // Force the prompt to ensure we get the refresh token
     }
 
     public function redirectToGoogle()
@@ -28,8 +30,12 @@ class GoogleController extends Controller
 
     public function handleGoogleCallback(Request $request)
     {
-        // Exchange the authorization code for an access token
         $token = $this->client->fetchAccessTokenWithAuthCode($request->code);
+        \Log::info($token);
+        
+        if (isset($token['error'])) {
+            return response()->json(['error' => 'Failed to obtain token: ' . $token['error']], 401);
+        }
         
         // Verify the ID token
         $payload = $this->client->verifyIdToken($token['id_token']);
@@ -40,6 +46,12 @@ class GoogleController extends Controller
 
             // Set the access token to make a request to the Google Oauth2 API
             $this->client->setAccessToken($token['access_token']);
+            $refreshToken = isset($token['refresh_token']) ? $token['refresh_token'] : null;
+
+            // Calculate expiration time
+            // $expirationTime = now()->addMinutes(1);
+            $expirationTime = now()->addSeconds($token['expires_in'] ?? 3600); // Default to 1 hour if not set
+
             $oauth2Service = new GoogleOauth2($this->client);
             $userInfo = $oauth2Service->userinfo->get(); // Get user info from Google
             
@@ -50,10 +62,10 @@ class GoogleController extends Controller
             $user = User::updateOrCreate(['email' => $email], [
                 'name' => $name, // Store the user's name
                 'google_token' => $token['access_token'],
+                'google_refresh_token' => $refreshToken,   // Store the refresh token
+                'google_token_expires_at' => $expirationTime, // Store the expiration time
             ]);
-
-            // Return the Sanctum token for the frontend to use
-            // return response()->json(['token' => $user->createToken('auth_token')->plainTextToken]);
+            
             return redirect('http://localhost:8080/auth?token=' . $user->createToken('auth_token')->plainTextToken);
         } else {
             // Handle error if the ID token is invalid
@@ -61,12 +73,64 @@ class GoogleController extends Controller
         }
     }
 
+    public function refreshGoogleToken($user)
+    {
+        $client = new GoogleClient();
+        $client->setClientId(env('GOOGLE_CLIENT_ID'));
+        $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
+
+        // Get the stored refresh token
+        $refreshToken = $user->google_refresh_token;
+
+        // Ensure the refresh token exists
+        if (!$refreshToken) {
+            throw new \Exception('Refresh token not available.');
+        }
+
+        // Set the refresh token in the client
+        $client->refreshToken($refreshToken);
+
+        // Get the new access token
+        try {
+            $newAccessToken = $client->fetchAccessTokenWithRefreshToken($refreshToken);
+
+            if (!isset($newAccessToken['access_token'])) {
+                throw new \Exception('Failed to refresh access token. Google response: ' . json_encode($newAccessToken));
+            }
+
+            // $expiresIn = now()->addMinutes(1);
+            $expiresIn = $newAccessToken['expires_in'] ?? 3600;
+            $user->google_token = $newAccessToken['access_token'];
+            $user->google_token_expires_at = now()->addSeconds($expiresIn);
+            $user->save();
+
+            return $newAccessToken['access_token'];
+        } catch (\Exception $e) {
+            \Log::error('Failed to refresh token: ' . $e->getMessage());
+            throw new \Exception('Failed to refresh token: ' . $e->getMessage());
+        }
+    }
+
+
     public function getGoogleEvents(Request $request)
     {
-        $googleToken = $request->user()->google_token;
+        $user = $request->user();
+
+        // Check if the user is authenticated
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Check if the access token has expired
+        if ($this->isTokenExpired($user)) {
+            // Refresh the token if it has expired
+            $accessToken = $this->refreshGoogleToken($user);
+        } else {
+            $accessToken = $user->google_token;
+        }
 
         $client = new GoogleClient();
-        $client->setAccessToken($googleToken);
+        $client->setAccessToken($accessToken);
 
         $calendarService = new GoogleCalendar($client);
         if($request->isFilter=='true') {
@@ -102,6 +166,16 @@ class GoogleController extends Controller
         }
 
         return response()->json($eventList);
+    }
+
+    public function isTokenExpired($user)
+    {
+        // Ensure we're checking the right property on the user object
+        $expirationTime = $user->google_token_expires_at; // Adjusted to the correct property name
+        
+        // Check if the current time is greater than the expiration time
+        return now()->greaterThan($expirationTime);
+
     }
 
     public function addGoogleEvent(Request $request)
